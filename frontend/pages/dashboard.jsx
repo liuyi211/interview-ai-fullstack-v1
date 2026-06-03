@@ -17,18 +17,29 @@ export default function DashboardPage() {
   const logRef = useRef(null);
 
   useEffect(() => {
-    // TODO: 从 localStorage 读取 token，若不存在则 router.push('/login')
-    //       存在则 setToken(t) 并调用 fetchBalance()
+    const t = localStorage.getItem('token');
+    if (!t) {
+      router.push('/login');
+      return;
+    }
+    setToken(t);
+    fetchBalance(t);
   }, []);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
-  const fetchBalance = async () => {
-    // TODO: GET ${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/billing/balance
-    //       带 Authorization: Bearer <token>
-    //       成功后 setBalance(data.balance)
+  const fetchBalance = async (t = token) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/billing/balance`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      const data = await res.json();
+      if (res.ok) setBalance(data.balance);
+    } catch (err) {
+      console.error('fetchBalance error:', err);
+    }
   };
 
   const submitJob = async () => {
@@ -39,11 +50,24 @@ export default function DashboardPage() {
     setLogs([]);
     setDone(false);
     try {
-      // TODO: POST ${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/jobs
-      //       带 Authorization: Bearer <token>，body: { payload: {} }
-      //       成功后取 data.jobId，调用 connectWs(data.jobId)
-      //       余额不足（402）显示错误提示
-      setError('尚未实现任务提交逻辑');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ payload: {} }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 402) {
+          setError('余额不足');
+        } else {
+          setError(data.message || '提交失败');
+        }
+        return;
+      }
+      connectWs(data.jobId);
     } catch (err) {
       setError(err.message || '提交失败');
     } finally {
@@ -53,13 +77,31 @@ export default function DashboardPage() {
 
   const connectWs = (jid) => {
     setJobId(jid);
-    // TODO: 连接 WebSocket: `${process.env.NEXT_PUBLIC_WS_URL}/ws/job/${jid}?token=${token}`
-    //       收到消息时：
-    //         setProgress(msg.progress)
-    //         setCurrentPhase(msg.phase)
-    //         setLogs(prev => [...prev, `[${msg.phase}] ${msg.log}`])
-    //         若 msg.progress === 100：setDone(true)；fetchBalance()
-    //       连接关闭或错误时：console.warn / setError
+    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_URL}/ws/job/${jid}?token=${token}`);
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        setProgress(msg.progress);
+        setCurrentPhase(msg.phase);
+        setLogs((prev) => [...prev, `[${msg.phase}] ${msg.log}`]);
+        if (msg.progress === 100) {
+          setDone(true);
+          fetchBalance();
+        }
+      } catch (err) {
+        console.warn('WS message parse error:', err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.warn('WS error:', err);
+      setError('WebSocket 连接错误');
+    };
+
+    ws.onclose = () => {
+      console.warn('WS closed');
+    };
   };
 
   return (
