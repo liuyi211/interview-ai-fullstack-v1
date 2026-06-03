@@ -14,7 +14,11 @@ const ApiError = require('../utils/ApiError');
  * ⚠️ 禁止从 req.body / req.query / req.headers['x-tenant-id'] 取值
  */
 const requireTenant = (req, res, next) => {
-  // TODO: 实现租户提取逻辑
+  const tenantId = req.user && req.user.tenantId;
+  if (!tenantId) {
+    return next(new ApiError(httpStatus.UNAUTHORIZED, 'Tenant required'));
+  }
+  req.tenantId = tenantId;
   next();
 };
 

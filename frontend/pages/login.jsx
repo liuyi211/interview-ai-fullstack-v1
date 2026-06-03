@@ -12,11 +12,22 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      // TODO: 调用 POST ${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/auth/login
-      //       body: { username, tenantId, role }
-      //       成功后将 token 存入 localStorage('token') 和 localStorage('tenantId')
-      //       然后 router.push('/dashboard')
-      setError('尚未实现登录逻辑');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: form.username,
+          tenantId: form.tenantId,
+          role: form.role,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || '登录失败');
+      }
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('tenantId', form.tenantId);
+      router.push('/dashboard');
     } catch (err) {
       setError(err.message || '登录失败');
     } finally {
