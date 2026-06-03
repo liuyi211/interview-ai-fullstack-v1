@@ -14,7 +14,22 @@ const { toJSON } = require('./plugins');
  * - completedAt: Date
  */
 const jobSchema = new mongoose.Schema({
-  // TODO: 实现 schema 字段
+  jobId: { type: String, required: true, unique: true },
+  tenantId: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['queued', 'processing', 'completed', 'failed'],
+    default: 'queued',
+  },
+  phases: [
+    {
+      name: String,
+      status: String,
+      completedAt: Date,
+    },
+  ],
+  createdAt: { type: Date, default: Date.now },
+  completedAt: Date,
 });
 
 // add plugin that converts mongoose to json
