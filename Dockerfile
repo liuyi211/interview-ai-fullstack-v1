@@ -16,3 +16,5 @@ RUN pnpm install --frozen-lockfile
 COPY --chown=node:node . .
 
 EXPOSE 3000
+
+CMD ["node", "src/index.js"]
