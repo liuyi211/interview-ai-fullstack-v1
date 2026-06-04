@@ -10,6 +10,7 @@ RUN npm install -g pnpm
 
 USER node
 
+ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node . .
