@@ -6,9 +6,13 @@ const eventBus = require('./eventBus');
 const Job = require('../models/job.model');
 
 const attachWsServer = (server) => {
-  const wss = new WebSocket.Server({ server, path: '/ws/job' });
+  const wss = new WebSocket.Server({ server });
 
   wss.on('connection', async (ws, req) => {
+    if (!req.url.startsWith('/ws/job/')) {
+      ws.close(4001, 'Invalid path');
+      return;
+    }
     try {
       const url = new URL(req.url, `http://${req.headers.host}`);
       const pathParts = url.pathname.split('/');
