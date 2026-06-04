@@ -6,9 +6,11 @@ WORKDIR /usr/src/node-app
 
 COPY package.json pnpm-lock.yaml ./
 
+RUN npm install -g pnpm
+
 USER node
 
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node . .
 
