@@ -6,8 +6,7 @@ WORKDIR /usr/src/node-app
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN npm install -g pnpm
-RUN echo "ignore-builds=false" > .npmrc
+RUN npm install -g pnpm@10.15.0
 
 USER node
 
