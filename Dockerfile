@@ -7,10 +7,11 @@ WORKDIR /usr/src/node-app
 COPY package.json pnpm-lock.yaml ./
 
 RUN npm install -g pnpm
+RUN echo "ignore-builds=false" > .npmrc
 
 USER node
 
-ENV HUSKY=0
+ENV HUSKY_SKIP_INSTALL=1
 RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node . .
